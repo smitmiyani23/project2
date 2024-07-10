@@ -1,0 +1,150 @@
+---
+title: "Project 2"
+format: html
+editor: visual
+---
+
+## Purpose
+
+Writing query functions for openFDA API used in Project 2.
+
+## Finding Data
+
+The chosen API is openFDA, provided by the food and drug administration. Specifically it looks at adverse events reported by hospitals, clinics and veterinary centers. It started recordkeeeping from Jan 1 2004.
+
+## Writing Functions
+
+### Creating Contingency tables Query
+
+#### Humans
+
+```{r}
+human_contig_table_url <- function(start_date, end_date, patient_sex = NULL, age_min = NULL, age_max = NULL, cat_var) {
+  base_url <- "https://api.fda.gov/drug/event.json?search="
+  
+  date_range <- paste0("receivedate:[", start_date, "+TO+", end_date, "]")
+  
+  query <- date_range
+  
+  if (!is.null(patient_sex)) {
+    sex <- paste0("patient.patientsex:", patient_sex)
+    query <- paste0(query, "+AND+", sex)
+  }
+  
+  if (!is.null(age_min) && !is.null(age_max)) {
+    age_range <- paste0("patient.patientonsetage:[", age_min, "+TO+", age_max, "]")
+    query <- paste0(query, "+AND+", age_range)
+  }
+  
+  full_url <- paste0(base_url, query, "&count=", cat_var)
+  
+  return(full_url)
+}
+
+```
+
+```{r}
+start_date <- "20040101"
+end_date <- "20240709"
+patient_sex <- 1 # Male
+age_min <- 5
+age_max <- 17
+cat_var <- "patient.reaction.reactionmeddrapt.exact"
+
+h_contig_url <- human_contig_table_url(start_date, end_date,cat_var =  cat_var)
+
+h_contig_url
+```
+
+#### Animals
+
+```{r}
+animal_contig_table_url <- function(animal_species = NULL, cat_var) {
+  base_url <- "https://api.fda.gov/animalandveterinary/event.json?search="
+  
+  if (!is.null(animal_species)) {
+    animal_query <- paste0("animal.species:", animal_species)
+    query <- paste0(animal_query)
+  } else {
+    query <- ""
+  }
+  
+  full_url <- paste0(base_url, query, "&count=", cat_var)
+  
+  return(full_url)
+}
+
+```
+
+```{r}
+
+a_contig_url <- animal_contig_table_url(animal_species = "Horse", cat_var ="reaction.veddra_term_name.exact" )
+a_contig_url
+```
+
+### Creating Subset tables Query
+
+#### Humans
+
+```{r}
+human_subset_url <- function(start_date, end_date, patient_sex = NULL, age_min = NULL, age_max = NULL) {
+  base_url <- "https://api.fda.gov/drug/event.json?search="
+  
+  date_range <- paste0("receivedate:[", start_date, "+TO+", end_date, "]")
+  
+  query <- date_range
+  
+  if (!is.null(patient_sex)) {
+    sex <- paste0("patient.patientsex:", patient_sex)
+    query <- paste0(query, "+AND+", sex)
+  }
+  
+  if (!is.null(age_min) && !is.null(age_max)) {
+    age_range <- paste0("patient.patientonsetage:[", age_min, "+TO+", age_max, "]")
+    query <- paste0(query, "+AND+", age_range)
+  }
+  
+  full_url <- paste0(base_url, query, "&limit=1000")
+  
+  return(full_url)
+}
+```
+
+```{r}
+h_subset_url <- human_subset_url(start_date, end_date)
+
+h_subset_url
+```
+
+#### Animals
+
+```{r}
+animal_subset_url <- function(animal_species = NULL) {
+  base_url <- "https://api.fda.gov/animalandveterinary/event.json?search="
+  
+  if (!is.null(animal_species)) {
+    animal_query <- paste0("animal.species:", animal_species)
+    query <- paste0(animal_query)
+  } else {
+    query <- ""
+  }
+  
+  full_url <- paste0(base_url, query, "&limit=1000")
+  
+  return(full_url)
+}
+```
+
+```{r}
+a_subset_url <- animal_subset_url()
+a_subset_url
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
