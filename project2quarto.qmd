@@ -140,6 +140,132 @@ a_subset_url <- animal_subset_url()
 a_subset_url
 ```
 
+```{r}
+library(httr)
+library(jsonlite)
+library(tidyverse)
+```
+
+```{r}
+h_contig_data <- GET(h_contig_url)
+h_contig_data <- rawToChar(h_contig_data$content)
+h_contig_data <- fromJSON(h_contig_data)
+head(h_contig_data$results)
+```
+
+```{r}
+a_subset_data <- GET(a_subset_url)
+a_subset_data <- rawToChar(a_subset_data$content)
+a_subset_data <- fromJSON(a_subset_data)
+head(a_subset_data$results)
+```
+
+```{r}
+head(a_subset_data$results$duration)
+```
+
+```{r}
+sd(as.numeric(a_subset_data$results$duration$value),na.rm = TRUE)
+```
+
+```{r}
+a_subset_data$results$number_of_animals_treated <- as.numeric(a_subset_data$results$number_of_animals_treated)
+```
+
+```{r}
+h_subset_data <- GET(h_subset_url)
+h_subset_data <- rawToChar(h_subset_data$content)
+h_subset_data <- fromJSON(h_subset_data)
+head(h_subset_data$results)
+```
+
+```{r}
+max(as.numeric(h_subset_data$results$seriousnessdisabling))
+```
+
+## Graphs:
+
+```{r}
+library(ggplot2)
+```
+
+#### Facetted Pie Charts using Animal Reactions
+
+```{r}
+api_query <- function (query_url) {
+  response <- GET(query_url)
+  data <- rawToChar(response$content)
+  result <- fromJSON(data)
+  return(result$results)
+}
+```
+
+```{r}
+species <- c("Cat","Dog","Horse","Cattle")
+urls <- list()
+for (i in seq(1:length(species))) {
+  urls[i] <- animal_contig_table_url(animal_species = species[i], cat_var = "reaction.veddra_term_name.exact")
+  
+}
+urls
+```
+
+```{r}
+df_lists <- lapply(urls, api_query)
+names(df_lists) <- species
+```
+
+```{r}
+combine_data <- function(df_list, names_list) {
+    combined_data <- bind_rows(
+        lapply(seq_along(df_list), function(i) {
+            df <- df_list[[i]][1:5,]
+            df$animal_type <- names_list[i]
+            return(df)
+        })
+    )
+    return(combined_data)
+}
+
+combined_data <- combine_data(df_lists, names(df_lists))
+```
+
+```{r}
+combined_data
+```
+
+```{r}
+
+ggplot(combined_data, aes(x = term, y = count, fill = term)) +
+    geom_bar( stat = "identity") +
+    facet_wrap(~ animal_type) +
+    theme_minimal() +
+    theme(legend.position = "bottom") +
+    labs(title = "Facetted Bar Charts") +
+    theme(axis.text.x = element_blank())
+```
+
+```{r}
+head(a_subset_data$results)
+```
+
+```{r}
+animal_subset <- a_subset_data$results
+animal_subset$animal_type <- animal_subset$animal$species
+animal_subset$treatment_duration <- as.numeric(animal_subset$duration$value)
+head(animal_subset)
+```
+
+```{r}
+library(see)
+library(easystats)
+
+ggplot(animal_subset[animal_subset$animal_type %in% c("Cat","Dog","Horse","Cattle"),], aes(x = animal_type, y = treatment_duration, fill = animal_type)) +
+  geom_violindot(fill_dots = "black") +
+  theme_modern() +
+  scale_fill_material_d()
+```
+
 You can add options to executable code like this
 
 ```{r}
