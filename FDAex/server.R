@@ -1,4 +1,5 @@
 # Load required libraries
+library(shinythemes)
 library(shiny)
 library(httr)
 library(jsonlite)

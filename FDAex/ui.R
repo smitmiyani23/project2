@@ -1,4 +1,5 @@
-fluidPage(
+library(shinythemes)
+fluidPage(theme = shinytheme("cerulean"),
     
     titlePanel("FDAex"),  # App title panel
     
