@@ -253,7 +253,8 @@ library(easystats)
 
 ggplot(animal_subset[animal_subset$animal_type %in% c("Cat","Dog","Horse","Cattle"),], aes(x = animal_type, y = treatment_duration, fill = animal_type)) +
   geom_violindot(fill_dots = "black") +
-  theme_modern() +
+  labs(title = "Treatment Duration By Animal Type")+
+  theme_classic() +
   scale_fill_material_d()
 ```
 
@@ -305,13 +306,6 @@ two_way_animal_contg
 ```
 
 ```{r}
-
-library(reshape2)
-
-# Assuming you already have two_way_animal_contg from your code
-
-# Convert month and year to factors to maintain order in the heatmap
-
 
 # Plotting the heatmap
 ggplot(data = two_way_animal_contg, aes(x = year, y = month, fill = Adverse_event_reports)) +
