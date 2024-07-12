@@ -189,7 +189,7 @@ max(as.numeric(h_subset_data$results$seriousnessdisabling))
 library(ggplot2)
 ```
 
-#### Facetted Pie Charts using Animal Reactions
+#### Bar Chart for Animal Reactions
 
 ```{r}
 api_query <- function (query_url) {
@@ -202,48 +202,39 @@ api_query <- function (query_url) {
 
 ```{r}
 species <- c("Cat","Dog","Horse","Cattle")
-urls <- list()
-for (i in seq(1:length(species))) {
-  urls[i] <- animal_contig_table_url(animal_species = species[i], cat_var = "reaction.veddra_term_name.exact")
-  
-}
-urls
+url <- animal_contig_table_url(animal_species = species[2], cat_var = "reaction.veddra_term_name.exact")
+url
 ```
 
 ```{r}
-df_lists <- lapply(urls, api_query)
-names(df_lists) <- species
+names(url) <- species[2]
 ```
 
 ```{r}
-combine_data <- function(df_list, names_list) {
-    combined_data <- bind_rows(
-        lapply(seq_along(df_list), function(i) {
-            df <- df_list[[i]][1:5,]
-            df$animal_type <- names_list[i]
-            return(df)
-        })
-    )
-    return(combined_data)
-}
-
-combined_data <- combine_data(df_lists, names(df_lists))
+animal_data <- api_query(url)
+animal_data
 ```
 
 ```{r}
-combined_data
-```
-
-```{r}
-
-ggplot(combined_data, aes(x = term, y = count, fill = term)) +
+library(glue)
+ggplot(animal_data[1:10,], aes(x = term, y = count, fill = term)) +
     geom_bar( stat = "identity") +
-    facet_wrap(~ animal_type) +
-    theme_minimal() +
-    theme(legend.position = "bottom") +
-    labs(title = "Facetted Bar Charts") +
-    theme(axis.text.x = element_blank())
+    theme_modern() +
+    xlab("Adverse Events") +
+    ylab("Reactions") +
+    labs(fill = "Reactions") +
+    theme(
+        legend.position = "right",
+        legend.key.size = unit(.5, 'cm'), 
+        legend.key.height = unit(.5, 'cm'), 
+        legend.key.width = unit(.5, 'cm'), 
+        legend.title = element_text(size=7), 
+        legend.text = element_text(size=5),
+        axis.text.x = element_blank()) + 
+    labs(title = glue("Top 10 Reaction for {species[2]} in adverse event"))
 ```
+
+#### Violin-Density Charts for Treatment Durations
 
 ```{r}
 head(a_subset_data$results)
@@ -264,6 +255,76 @@ ggplot(animal_subset[animal_subset$animal_type %in% c("Cat","Dog","Horse","Cattl
   geom_violindot(fill_dots = "black") +
   theme_modern() +
   scale_fill_material_d()
+```
+
+#### Time Series charts of adverse events
+
+```{r}
+#Adverse animal reports for given year
+animal_subset$year <- substr(animal_subset$original_receive_date,start = 1,stop = 4)
+
+animal_subset$event <- 1
+
+animal_timeseries_subset<-animal_subset |>
+  select(animal_type,year,event) |>
+  group_by(animal_type,year)|>
+  summarise(Adverse_event_reports = n())
+```
+
+```{r}
+binned <- function(x){
+  x <- sort(as.vector(x))
+  x <- base::seq(from= min(x),to = max(x),by= round(length(x)/10))
+  return(x)
+}
+
+
+ggplot(data = animal_timeseries_subset[animal_timeseries_subset$animal_type %in% c("Cat","Dog","Horse","Cattle"),], aes(x = year, y = Adverse_event_reports, group = 1)) +
+  geom_line(color = "blue", size = 1.2) + 
+  facet_wrap(~ animal_type) +
+  scale_x_discrete(breaks= binned(animal_timeseries_subset$year)) +
+  theme_radar() +
+  labs(title = "Adverse Events over time",
+       x = "Year",
+       y = "Number of Adverse Event Reports") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#### Heat Map:
+
+```{r}
+animal_subset$month <- as.numeric(substr(animal_subset$original_receive_date,start = 5,stop = 6))
+
+animal_subset$month <- month.name[animal_subset$month]
+
+two_way_animal_contg <- animal_subset |>
+  select(month,year,event) |>
+  group_by(year,month)|>
+  summarise(Adverse_event_reports = n())
+two_way_animal_contg
+```
+
+```{r}
+
+library(reshape2)
+
+# Assuming you already have two_way_animal_contg from your code
+
+# Convert month and year to factors to maintain order in the heatmap
+
+
+# Plotting the heatmap
+ggplot(data = two_way_animal_contg, aes(x = year, y = month, fill = Adverse_event_reports)) +
+  geom_raster(interpolate = TRUE) +
+  scale_fill_gradient(low = "white", high = "purple") +
+  scale_x_discrete(breaks= binned(animal_timeseries_subset$year)) +
+  labs(title = "Heatmap of Adverse Events by Month and Year",
+       x = "Year",
+       y = "Month",
+       fill = "Adverse Event Reports") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
 
 You can add options to executable code like this
